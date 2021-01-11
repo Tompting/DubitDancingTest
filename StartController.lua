@@ -16,7 +16,7 @@ local Player = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 
 local Character = Player.Character
-local Humanoid = Character.Humanoid
+local Humanoid = Character:WaitForChild("Humanoid")
 local StandardAnimateScript = Character.Animate
 
 local SongUIContainer = script.Parent
@@ -27,43 +27,59 @@ local ExitHandler = script["Exit Handler"]:Clone()
 ExitHandler.Disabled = false
 ExitHandler.Parent = Player.PlayerScripts
 
+SongUIContainer.Prompt.Visible = (UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled)
+
+function EndGame()
+	
+	Camera.CameraType = Enum.CameraType.Custom
+	Humanoid.WalkSpeed = 16
+	Humanoid.JumpPower = 50
+
+	local animTracks = Humanoid:GetPlayingAnimationTracks()
+	for i = 1, #animTracks do
+		animTracks[i]:Stop()
+	end
+
+	StandardAnimateScript.Disabled = false
+
+	SongUIContainer.Slide.Visible = false
+	SongUIContainer.Targets.Visible = false
+end
+
+function StartGame()
+	Camera.CameraType = Enum.CameraType.Scriptable
+	Humanoid.WalkSpeed = 0
+	Humanoid.JumpPower = 0
+
+	StandardAnimateScript.Disabled = true
+
+	Camera.CFrame = Character.Head.CFrame:ToWorldSpace(CameraOffset)
+	Camera.CFrame = CFrame.new(Camera.CFrame.Position, Character.Head.Position)
+
+	ReplicatedStorage.Remotes.Play:FireServer()
+
+	SongUIContainer.Slide.Visible = true
+	SongUIContainer.Targets.Visible = true
+	
+	SongControllerScript.Disabled = false
+end
+
+SongUIContainer.Prompt.TextButton.MouseButton1Click:Connect(function()
+	if SongUIContainer.Slide.Visible == false then
+		StartGame()
+	else
+		EndGame()
+	end
+end)
+
 -- Toggles whether the user is playing the minigame.
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
 	if not gameProcessed then
 		if input.KeyCode == ToggleGame then
-			local IsPlaying = SongControllerScript.Disabled
-			
-			SongControllerScript.Disabled = not IsPlaying
-			
-			if not IsPlaying then
-				Camera.CameraType = Enum.CameraType.Custom
-				Humanoid.WalkSpeed = 16
-				Humanoid.JumpPower = 50
-				
-				local animTracks = Humanoid:GetPlayingAnimationTracks()
-				for i = 1, #animTracks do
-					animTracks[i]:Stop()
-				end
-				
-				StandardAnimateScript.Disabled = false
-				
-				SongUIContainer.Slide.Visible = false
-				SongUIContainer.Targets.Visible = false
-				
+			if SongUIContainer.Slide.Visible == false then
+				StartGame()
 			else
-				Camera.CameraType = Enum.CameraType.Scriptable
-				Humanoid.WalkSpeed = 0
-				Humanoid.JumpPower = 0
-				
-				StandardAnimateScript.Disabled = true
-				
-				Camera.CFrame = Character.Head.CFrame:ToWorldSpace(CameraOffset)
-				Camera.CFrame = CFrame.new(Camera.CFrame.Position, Character.Head.Position)
-				
-				ReplicatedStorage.Remotes.Play:FireServer()
-				
-				SongUIContainer.Slide.Visible = true
-				SongUIContainer.Targets.Visible = true
+				EndGame()
 			end
 		end
 	end
